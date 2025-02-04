@@ -1,7 +1,7 @@
 # Flip_City
 my first godot game; jump, collect, doge, and get away.
 
-this is a colige asinment for "jim" and i intend to have fun.
+This is a college assignment for "jim" and i intend to have fun.
 
 ## Goles
 1. Move: I want to jump run and fall.
