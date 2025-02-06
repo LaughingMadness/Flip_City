@@ -10,4 +10,4 @@ This is a college assignment for "jim" and i intend to have fun.
 4. Map: The map shud by esay to replay and change.
 
 ## Character
-Nix-50 is a professional, or modeled after one at least, trained in **extreme parkour** and strong enough to turn random junk into a devastating weapon.
+Nix-50 is a professional, or modeled after one at least, trained in **extreme parkour** and strong enough to turn random junk into a devastating weapon, thay wher tasked whith braking in to
