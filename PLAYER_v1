@@ -1,0 +1,142 @@
+extends CharacterBody2D
+
+@onready var Art = $Sprite2D  # Reference to your node
+
+@export var RAY_LENGTH = 300
+@export var SPEED = 300.0
+@export var AIR_SPEED = 20.0
+@export var JUMP_VELOCITY = -400.0
+@export var STRIKE_VELOCITY = -40000.0
+@export var DELAY = 400.0
+
+@export var CheckRange = 5
+
+@export var Step_A = "ui_left"
+@export var Step_D = "ui_right"
+@export var Step_Jump = "ui_accept"
+
+@export var Invantory_BulletTime = "ui_focus_next"
+@export var Invantory_Collect = "ui_focus_next"
+
+@export var Strike_R = "clik_R"
+@export var Strike_L = "clik_L"
+
+################################################################################
+var CoolDown 
+# time < Time.get_ticks_usec()
+# time = DELAY + Time.get_ticks_usec() #  the amount of time passed in microseconds since the engine started
+# print("side = ",side," time = ", time, " full time = ", Time.get_ticks_usec())
+
+var BulletTime # A modefier for movement # how do i slow down the players prospectiv on time
+# temperarely reduse
+# gravity, move speed, projectials, mobs, objects... ect
+
+var pV = velocity
+var pF = 0
+var curent_animation= "Idel"
+
+################################################################################
+func _test(I, R):
+	print(R.collider_id == I.collider_id) # debug
+	return R.collider_id == I.collider_id
+################################################################################
+func _rayLine(side, ray_start, x, y):
+	var space_state = get_world_2d().direct_space_state  # Get access to the physics space for raycasting
+	# Calculate the ray direction based on the player's rotation and modefiers
+	var ray_direction = Vector2(cos(self.rotation+rad_to_deg(x)), sin(self.rotation+rad_to_deg(y))).normalized()
+	# Calculate the ray end point based on the direction and RAY_LENGTH
+	var ray_end = ray_start + ray_direction * side * RAY_LENGTH
+#------------------------------------------------------------------------------#
+	var query = PhysicsRayQueryParameters2D.create(ray_start, ray_end)  # Create a ray query from start to end
+	query.collide_with_areas = true                     # Allow the ray to hit areas (not just physical bodies)
+	var result = space_state.intersect_ray(query)        # Perform the raycast and store the result in `result`
+	return result
+
+################################################################################
+func _Move(delta):
+	
+	# Add the gravity.
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+	# Handle jump.
+	if Input.is_action_just_pressed(Step_Jump) and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+	# Get the input direction and handle the movement/deceleration.
+	var direction := Input.get_axis(Step_A, Step_D)
+	if direction:
+		if direction == 1: # flash Attack animason Right side
+			Art.flip_h = false
+			Art.play("Run")
+		else: # flash Attack animason Left side
+			Art.flip_h = true
+			Art.play("Run")
+		velocity.x = direction * SPEED
+	elif not is_on_floor():
+		velocity.x = move_toward(velocity.x, 0, AIR_SPEED) # Air resistance
+	else:
+		Art.play("Idel")
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	if not is_on_floor() and BulletTime: # and Input.is_action_pressed("ui_accept")
+		var roll := Input.get_axis(Step_A, Step_D)
+		if roll:
+			rotate(rad_to_deg(roll*.1*delta))
+		else:
+			#print(move_toward(rotation, 0, 20)) # error
+			rotate(move_toward(rotation, 0, 20)) 
+
+	if Input.is_action_pressed(Invantory_BulletTime):
+		if !BulletTime:
+			pV= velocity
+			BulletTime = true
+			curent_animation = Art.animation
+			pF = Art.frame
+		Art.pause()
+		velocity = Vector2(0,0)
+	else: 
+		if BulletTime:
+			velocity = pV 
+			Art.play(curent_animation)
+			Art.frame = pF
+			BulletTime = false
+		
+	move_and_slide()
+################################################################################
+var X = 0
+
+var itemList = []
+
+func _physics_process(delta):
+
+	_Move(delta)
+
+	if itemList: print(itemList, "\n\n")
+
+	if X == CheckRange:
+		print("true")
+		X = 0
+		itemList = []
+	else: 
+		X=+1
+
+
+	var Limiter = !Input.is_action_pressed(Strike_R) and !Input.is_action_pressed(Strike_L)
+	#print(!Limiter) # provent A constent flow # look in to just_pressed
+
+	var side := Input.get_axis(Strike_L, Strike_R)
+	if side and !Limiter:
+		print(side)
+		var ray_start = self.global_position         # Starting point of the ray (player's position)
+
+# whut did i hit this _physics_process
+		var result = _rayLine(side,ray_start, X, 0)
+
+		if itemList.any(func (item): return !_test(item, result) ):
+			itemList.append(result)
+		# hit Move
+			velocity = STRIKE_VELOCITY * (result.position - ray_start).normalized() * delta
+			#print(result, "\n\n")
+
+
+
+################################################################################ debug
